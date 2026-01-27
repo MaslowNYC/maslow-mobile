@@ -16,9 +16,13 @@ export const AuthProvider = ({ children }) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           checkFounderStatus(session.user.id);
+        } else {
+          // Reset founder status when no user session
+          setIsFounder(false);
         }
       } catch (err) {
         console.error('Session check failed', err);
+        setIsFounder(false); // Reset on error
       } finally {
         setLoading(false);
       }
@@ -31,6 +35,9 @@ export const AuthProvider = ({ children }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkFounderStatus(session.user.id);
+      } else {
+        // Reset founder status when user logs out
+        setIsFounder(false);
       }
       setLoading(false);
     });
@@ -46,13 +53,21 @@ export const AuthProvider = ({ children }) => {
         .eq('id', userId)
         .single();
 
-      if (data && data.is_admin) {
-        setIsFounder(true);
-      } else {
+      // Reset to false on any error or missing data
+      if (error || !data) {
         setIsFounder(false);
+        if (error) {
+          console.error('Founder check failed:', error);
+        }
+        return;
       }
+
+      // Only set to true if explicitly is_admin is true
+      setIsFounder(data.is_admin === true);
     } catch (error) {
+      // Reset to false on any exception
       console.error('Founder check failed:', error);
+      setIsFounder(false);
     }
   };
 
